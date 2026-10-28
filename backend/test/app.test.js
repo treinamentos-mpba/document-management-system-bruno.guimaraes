@@ -1,6 +1,7 @@
 const { after, before, test } = require('node:test');
 const assert = require('node:assert');
 const { mkdtempSync, rmSync } = require('node:fs');
+const { readFile, unlink } = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
 
@@ -25,8 +26,6 @@ after(async () => {
   rmSync(storageDirectory, { recursive: true, force: true });
 });
 
-// Teste de fumaça do seed: garante que o app Express foi exportado.
-// Novos testes serão adicionados durante os Steps 2, 6 e 7 com auxílio do Copilot.
 test('o app backend é exportado', () => {
   assert.ok(app, 'o app deve estar definido');
   assert.strictEqual(typeof app, 'function', 'o app Express deve ser uma função');
@@ -50,6 +49,10 @@ test('faz upload, lista e baixa somente documentos do próprio usuário', async 
   assert.deepStrictEqual(Object.keys(document).sort(), ['id', 'originalName', 'owner', 'size', 'uploadedAt']);
   assert.ok(document.id);
   assert.ok(Number.isFinite(Date.parse(document.uploadedAt)));
+  assert.strictEqual(
+    await readFile(path.join(storageDirectory, document.id), 'utf8'),
+    'conteudo do documento',
+  );
 
   const listResponse = await fetch(`${baseUrl}/documents`, {
     headers: { 'X-User-Id': 'alice' },
@@ -103,4 +106,34 @@ test('retorna erros consistentes para usuário ausente, arquivo ausente e arquiv
   });
   assert.strictEqual(largeFileResponse.status, 413);
   assert.strictEqual((await largeFileResponse.json()).error.code, 'FILE_TOO_LARGE');
+});
+
+test('retorna 404 para documento inexistente', async () => {
+  const response = await fetch(`${baseUrl}/documents/00000000-0000-4000-8000-000000000000/download`, {
+    headers: { 'X-User-Id': 'alice' },
+  });
+
+  assert.strictEqual(response.status, 404);
+  assert.strictEqual((await response.json()).error.code, 'DOCUMENT_NOT_FOUND');
+});
+
+test('trata falha de leitura quando o arquivo não existe mais no disco', async () => {
+  const formData = new FormData();
+  formData.append('file', new Blob(['arquivo temporario']), 'temporario.txt');
+
+  const uploadResponse = await fetch(`${baseUrl}/upload`, {
+    method: 'POST',
+    headers: { 'X-User-Id': 'carol' },
+    body: formData,
+  });
+  assert.strictEqual(uploadResponse.status, 201);
+  const { document } = await uploadResponse.json();
+  await unlink(path.join(storageDirectory, document.id));
+
+  const response = await fetch(`${baseUrl}/documents/${document.id}/download`, {
+    headers: { 'X-User-Id': 'carol' },
+  });
+
+  assert.strictEqual(response.status, 500);
+  assert.strictEqual((await response.json()).error.code, 'FILE_READ_FAILED');
 });
