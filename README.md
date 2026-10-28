@@ -48,6 +48,32 @@ Erros usam `{ error: { code, message } }`, com status `400` para entrada inváli
 `401` para usuário ausente, `404` para documento inexistente ou de outro dono,
 `413` para tamanho excedido e `500` para falhas internas ou de leitura.
 
+## Frontend
+
+Com o backend em execução:
+
+```sh
+cd frontend
+npm ci
+npm run dev
+```
+
+Acesse `http://localhost:5173`. Informe o usuário, selecione um arquivo e clique em
+**Enviar documento**. A lista é carregada ao abrir a página e atualizada após cada
+envio; **Atualizar lista** consulta os documentos do usuário informado. O botão de
+download salva o arquivo com seu nome original.
+
+O [App](frontend/src/App.jsx) monta os componentes funcionais
+[UploadComponent](frontend/src/components/UploadComponent.jsx),
+[DocumentList](frontend/src/components/DocumentList.jsx) e
+[DownloadButton](frontend/src/components/DownloadButton.jsx). O
+[cliente de API](frontend/src/services/documents.js) centraliza as chamadas `fetch`
+com o prefixo `/api` e o cabeçalho `X-User-Id`, usando o proxy do Vite.
+
+Execute `npm test` para verificar os componentes e o cliente de API, e
+`npm run build` para gerar a versão de produção. Em produção, configure também
+o encaminhamento de `/api` para o backend no servidor que hospeda o frontend.
+
 ---
 
 &copy; 2025 GitHub &bull; [Code of Conduct](https://www.contributor-covenant.org/version/2/1/code_of_conduct/code_of_conduct.md) &bull; [MIT License](https://gh.io/mit)
