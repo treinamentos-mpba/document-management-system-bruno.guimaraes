@@ -1,8 +1,7 @@
 # Instruções do projeto - Document Management System (DMS)
 
 Estas instruções são aplicadas automaticamente pelo GitHub Copilot em todas as
-interações neste repositório. Use-as como contexto de engenharia para gerar
-código consistente com a arquitetura e as convenções do projeto.
+interações neste repositório. Use-as como contexto de engenharia para gerar código consistente com a arquitetura e as convenções do projeto.
 
 ## Visão geral
 
