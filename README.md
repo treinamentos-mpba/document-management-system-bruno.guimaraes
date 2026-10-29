@@ -12,5 +12,35 @@ Remember, it's self-paced so feel free to take a break! ☕️
 
 ---
 
-&copy; 2025 GitHub &bull; [Code of Conduct](https://www.contributor-covenant.org/version/2/1/code_of_conduct/code_of_conduct.md) &bull; [MIT License](https://gh.io/mit)
+## Execução e validação
 
+Use Node.js 24 ou superior. Instale as dependências em cada pacote:
+
+```bash
+cd backend
+npm install
+npm test
+cd ../frontend
+npm install
+npm run build
+```
+
+O workflow [CI](.github/workflows/ci.yml) executa esses passos em todo
+`push` e `pull_request`. Os testes de integração usam HTTP real, porta
+temporária e diretórios isolados, removidos ao final.
+
+Para iniciar a API, execute `npm start` em `backend` (porta padrão 3000,
+configurável por `PORT`):
+
+- `POST /upload`: envie um único arquivo multipart no campo `file`;
+  retorna HTTP 201 com `id`, `originalName`, `size`, `createdAt` e `owner`.
+- `GET /documents`: retorna o array de metadados.
+- `GET /documents/:id/download`: retorna o arquivo como anexo ou HTTP 404.
+- `GET /health`: retorna `{ "status": "ok" }`.
+
+Os arquivos ficam em `backend/storage`, com nomes internos únicos. Os metadados
+ficam em memória e são perdidos ao reiniciar a API; os arquivos permanecem no
+disco. Não há autenticação nesta fase e `owner` é `null`.
+Uploads sem arquivo ou com campos de arquivo inesperados retornam HTTP 400.
+
+&copy; 2025 GitHub &bull; [Code of Conduct](https://www.contributor-covenant.org/version/2/1/code_of_conduct/code_of_conduct.md) &bull; [MIT License](https://gh.io/mit)

@@ -1,27 +1,38 @@
-// Seed do servidor backend do Document Management System.
-//
-// Este arquivo é apenas um ponto de partida mínimo. Ao longo do workshop você
-// vai usar o Agent Mode do GitHub Copilot para construir as camadas:
-//   - routes/       (definição das rotas)
-//   - controllers/  (entrada HTTP e validação)
-//   - services/     (regras de negócio)
-//   - repositories/ (persistência: arquivos locais + metadados em memória)
-//
-// Restrição do projeto: uploads são gravados no filesystem local da aplicação
-// usando multer com diskStorage. Não utilize provedores externos.
-
 const express = require('express');
+const multer = require('multer');
+const path = require('node:path');
+const createDocumentRoutes = require('./routes/documentRoutes');
 
-const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(express.json());
+function createApp({ storageDirectory = path.join(__dirname, '../storage') } = {}) {
+  const app = express();
+  app.use(express.json());
 
-// Endpoint de verificação de saúde. As demais rotas (/upload, /documents,
-// /documents/:id/download) serão implementadas durante o Passo 2.
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok' });
-});
+  app.get('/health', (req, res) => {
+    res.json({ status: 'ok' });
+  });
+
+  app.use(createDocumentRoutes(storageDirectory));
+
+  app.use((error, req, res, next) => {
+    if (res.headersSent) {
+      return next(error);
+    }
+    if (error instanceof multer.MulterError) {
+      return res.status(400).json({ error: 'Upload inválido. Use o campo file para um único arquivo.' });
+    }
+    if (error.status === 400) {
+      return res.status(400).json({ error: 'Requisição inválida.' });
+    }
+    console.error('Erro ao processar documento:', error);
+    res.status(500).json({ error: 'Não foi possível processar o documento.' });
+  });
+
+  return app;
+}
+
+const app = createApp();
 
 if (require.main === module) {
   app.listen(PORT, () => {
@@ -30,3 +41,4 @@ if (require.main === module) {
 }
 
 module.exports = app;
+module.exports.createApp = createApp;
