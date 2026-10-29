@@ -1,17 +1,54 @@
 import assert from 'node:assert/strict';
 import { afterEach, mock, test } from 'node:test';
-import { downloadDocument, listDocuments, uploadDocument } from '../src/services/documents.js';
+import { downloadDocument, getAuthMode, listDocuments, login, uploadDocument } from '../src/services/documents.js';
 
 afterEach(() => mock.restoreAll());
 
 test('lista documentos via /api com o identificador do usuário', async () => {
   const documents = [{ id: 'document-1', originalName: 'arquivo.txt' }];
-  const fetchMock = mock.method(globalThis, 'fetch', async () => Response.json({ documents }));
+  const result = {
+    documents,
+    pagination: { offset: 0, limit: 50, total: 1, nextOffset: null },
+  };
+  const fetchMock = mock.method(globalThis, 'fetch', async () => Response.json(result));
 
-  assert.deepEqual(await listDocuments('user-123'), documents);
+  assert.deepEqual(await listDocuments('user-123'), result);
   assert.deepEqual(fetchMock.mock.calls[0].arguments, [
     '/api/documents', { headers: { 'X-User-Id': 'user-123' } },
   ]);
+});
+
+test('envia credenciais sem persistir a senha', async () => {
+  const fetchMock = mock.method(globalThis, 'fetch', async () => Response.json({
+    token: 'signed-token',
+    userId: 'alice',
+  }));
+
+  assert.deepEqual(await login('alice', 'secret'), { token: 'signed-token', userId: 'alice' });
+  assert.deepEqual(fetchMock.mock.calls[0].arguments, [
+    '/api/auth/login',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: 'alice', password: 'secret' }),
+    },
+  ]);
+});
+
+test('envia token bearer e paginação ao consultar documentos', async () => {
+  const result = { documents: [], pagination: { offset: 50, limit: 50, total: 55, nextOffset: null } };
+  const fetchMock = mock.method(globalThis, 'fetch', async () => Response.json(result));
+
+  assert.deepEqual(await listDocuments('alice', { token: 'signed-token', offset: 50 }), result);
+  assert.deepEqual(fetchMock.mock.calls[0].arguments, [
+    '/api/documents?offset=50',
+    { headers: { Authorization: 'Bearer signed-token' } },
+  ]);
+});
+
+test('descobre quando a API exige autenticação', async () => {
+  mock.method(globalThis, 'fetch', async () => Response.json({ authRequired: true }));
+  assert.deepEqual(await getAuthMode(), { authRequired: true });
 });
 
 test('envia o arquivo no campo file sem sobrescrever o Content-Type multipart', async () => {
@@ -64,4 +101,15 @@ test('propaga falhas de rede', async () => {
   mock.method(globalThis, 'fetch', async () => { throw new TypeError('Falha de rede.'); });
 
   await assert.rejects(() => listDocuments('user-123'), { message: 'Falha de rede.' });
+});
+
+test('preserva o status HTTP para a interface encerrar sessões expiradas', async () => {
+  mock.method(globalThis, 'fetch', async () => Response.json({
+    error: { code: 'AUTHENTICATION_REQUIRED', message: 'Sessão expirada.' },
+  }, { status: 401 }));
+
+  await assert.rejects(
+    () => listDocuments('alice', { token: 'expired-token' }),
+    (error) => error.status === 401 && error.code === 'AUTHENTICATION_REQUIRED',
+  );
 });

@@ -19,7 +19,7 @@ export default function UploadComponent({ onUpload, onError }) {
       setSelectedFile(null);
       form.reset();
     } catch (error) {
-      onError(error.message);
+      onError(error);
     } finally {
       setIsUploading(false);
     }

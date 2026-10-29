@@ -3,6 +3,7 @@
         "/^npm test$/": {
             "approve": true,
             "matchCommandLine": true
-        }
+        },
+        "npm test": true
     }
 }

@@ -15,5 +15,12 @@ const storage = multer.diskStorage({
 
 module.exports = multer({
   storage,
-  limits: { fileSize: maxFileSizeBytes, files: 1 },
+  limits: {
+    fileSize: maxFileSizeBytes,
+    files: 1,
+    fields: 0,
+    // O Busboy dispara partsLimit ao atingir o valor; 2 permite uma parte e rejeita a segunda.
+    parts: 2,
+    fieldNameSize: 100,
+  },
 });

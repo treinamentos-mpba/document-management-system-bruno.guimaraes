@@ -13,13 +13,24 @@ function formatDate(value) {
   }).format(new Date(value));
 }
 
-export default function DocumentList({ documents, isLoading, userId, onRefresh, onError, error, notice }) {
+export default function DocumentList({
+  documents,
+  isLoading,
+  userId,
+  token,
+  pagination,
+  onRefresh,
+  onPageChange,
+  onError,
+  error,
+  notice,
+}) {
   return (
     <section className="documents-section" aria-labelledby="documents-title">
       <div className="section-heading list-heading">
         <div>
           <p className="section-index">02 / ARQUIVO PESSOAL</p>
-          <h2 id="documents-title">Seus documentos <span className="count">{documents.length}</span></h2>
+          <h2 id="documents-title">Seus documentos <span className="count">{pagination?.total ?? documents.length}</span></h2>
         </div>
         <button className="text-button" type="button" onClick={onRefresh} disabled={isLoading}>
           {isLoading ? 'Atualizando...' : 'Atualizar lista'}
@@ -42,10 +53,35 @@ export default function DocumentList({ documents, isLoading, userId, onRefresh, 
                 <span className="document-name">{document.originalName}</span>
                 <span className="document-meta">{formatSize(document.size)} <span aria-hidden="true">·</span> {formatDate(document.uploadedAt)}</span>
               </div>
-              <DownloadButton document={document} userId={userId} onError={onError} />
+              <DownloadButton document={document} userId={userId} token={token} onError={onError} />
             </li>
           ))}
         </ul>
+      )}
+      {pagination && pagination.total > pagination.limit && (
+        <div className="pagination-controls" aria-label="Paginação dos documentos">
+          <button
+            className="text-button"
+            type="button"
+            onClick={() => onPageChange(Math.max(0, pagination.offset - pagination.limit))}
+            disabled={isLoading || pagination.offset === 0}
+          >
+            Anterior
+          </button>
+          <span>
+            {pagination.total === 0
+              ? '0 documentos'
+              : `${pagination.offset + 1}–${Math.min(pagination.offset + documents.length, pagination.total)} de ${pagination.total}`}
+          </span>
+          <button
+            className="text-button"
+            type="button"
+            onClick={() => onPageChange(pagination.nextOffset)}
+            disabled={isLoading || pagination.nextOffset === null}
+          >
+            Próxima
+          </button>
+        </div>
       )}
     </section>
   );

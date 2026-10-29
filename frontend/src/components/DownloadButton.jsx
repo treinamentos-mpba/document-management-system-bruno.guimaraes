@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { downloadDocument } from '../services/documents.js';
 
-export default function DownloadButton({ document, userId, onError }) {
+export default function DownloadButton({ document, userId, token, onError }) {
   const [isDownloading, setIsDownloading] = useState(false);
 
   async function handleDownload() {
@@ -13,7 +13,7 @@ export default function DownloadButton({ document, userId, onError }) {
     setIsDownloading(true);
     onError('');
     try {
-      const file = await downloadDocument(userId.trim(), document.id);
+      const file = await downloadDocument(userId.trim(), document.id, { token });
       const objectUrl = URL.createObjectURL(file);
       try {
         const link = window.document.createElement('a');
@@ -29,7 +29,7 @@ export default function DownloadButton({ document, userId, onError }) {
         window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
       }
     } catch (error) {
-      onError(error.message);
+      onError(error);
     } finally {
       setIsDownloading(false);
     }

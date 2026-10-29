@@ -16,6 +16,14 @@ function errorHandler(error, req, res, next) {
 
   const status = Number.isInteger(error.status) ? error.status : 500;
   const code = error.code || 'INTERNAL_ERROR';
+  if (status >= 500) {
+    console.error('[DMS] Request failed', {
+      method: req.method,
+      path: req.path,
+      code,
+      message: error.message,
+    });
+  }
   const message = status === 500 ? 'Ocorreu um erro interno.' : error.message;
 
   return res.status(status).json({ error: { code, message } });

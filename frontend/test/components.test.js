@@ -63,6 +63,17 @@ test('listagem mostra nome, tamanho, data e botão de download por documento', (
   assert.match(html, /class="count">1/);
 });
 
+test('listagem apresenta paginação quando há mais documentos que a página', () => {
+  const html = render(DocumentList, {
+    documents: [document],
+    isLoading: false,
+    pagination: { offset: 0, limit: 50, total: 51, nextOffset: 50 },
+    onPageChange() {},
+  });
+  assert.match(html, /1–1 de 51/);
+  assert.match(html, /Próxima/);
+});
+
 test('botão de download possui nome acessível com o nome original', () => {
   const html = render(DownloadButton, { document, userId: 'user-123' });
   assert.match(html, /type="button"/);

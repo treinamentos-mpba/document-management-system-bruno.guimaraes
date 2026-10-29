@@ -42,15 +42,19 @@ Camadas internas não conhecem camadas externas.
 ## Endpoints previstos
 
 - `POST /upload` - envia um documento
-- `GET /documents` - lista os documentos
+- `GET /documents` - lista documentos paginados
 - `GET /documents/:id/download` - baixa um documento
+- `GET /auth/mode` e `POST /auth/login` - descoberta do modo e autenticação configurada
+- `POST /auth/login` - autentica usuário configurado pelo operador
 
 ## Armazenamento (restrição importante)
 
 - Os arquivos enviados são gravados no filesystem local da aplicação, na pasta
   `backend/storage`, utilizando `multer` com `diskStorage`.
-- Os metadados dos documentos (id, nome original, tamanho, data, dono) ficam em
-  memória nesta fase inicial.
+- Os metadados dos documentos são persistidos em arquivos JSON locais sob
+  `backend/storage/.metadata`; não dependem de provedores ou bancos externos.
+- Em produção, use `AUTH_SECRET` e `AUTH_USERS_JSON`; `X-User-Id` só é aceito no
+  modo local de desenvolvimento e nunca autentica usuários.
 - Não utilize provedores de armazenamento externos ou serviços de upload de
   terceiros. O armazenamento é estritamente local à aplicação.
 
